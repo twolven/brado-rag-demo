@@ -16,24 +16,20 @@
             height: 100%;
             margin: 0;
             padding: 0;
-            overflow: hidden;
         }
     
         .app-container {
             display: flex;
             flex-direction: column;
-            height: 100vh;
+            min-height: 100vh;
         }
     
         .models-container {
             flex: 1;
-            min-height: 0;
-            overflow: auto;
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
             gap: 1rem;
             padding: 1rem;
-            height: calc(100vh - var(--header-height) - var(--input-height));
         }
     
         .model-window {
@@ -163,15 +159,14 @@
             .models-container {
                 display: flex;
                 flex-direction: column;
-                height: calc(100vh - var(--header-height) - var(--input-height));
                 padding: 0.5rem;
                 gap: 0.5rem;
             }
     
             .model-window {
                 flex: 1;
-                min-height: 0;
-                max-height: calc((100vh - var(--header-height) - var(--input-height)) / 2);
+                min-height: 300px;
+                height: auto;
                 overflow: hidden;
             }
 
@@ -204,7 +199,8 @@
 
             /* Make chat windows more compact */
             .chat-window {
-                padding: 0.5rem;
+                height: 250px; /* Fixed height for scroll area */
+                overflow-y: auto; /* Enable independent scrolling */
             }
 
             /* Adjust suggested questions */
