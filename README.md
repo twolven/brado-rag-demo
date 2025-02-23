@@ -49,11 +49,11 @@ After discussing RAG implementations during my initial interview, I created this
   - Pinecone vector database
 
 ## Project Structure
-```
+```bash
 project/
-├── frontend/
-│   ├── index.html     # Main interface
-│   └── app.js         # Frontend logic and API integration
+├── index.html         # Main interface
+├── app.js            # Frontend logic and API integration
+├── README.md         # Project documentation
 ├── backend/
 │   ├── test_rag.py    # FastAPI server implementation
 │   ├── rag_serv.py    # RAG server implementation
