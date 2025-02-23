@@ -9,16 +9,16 @@ const userInput = document.getElementById('user-input');
 
 // Configuration
 const config = {
-    basicEndpoint: 'http://neotitan.ddns.net:9214/v1/chat/completions',
-    ragEndpoint: 'http://neotitan.ddns.net:9215/v1/chat/completions',
+    basicEndpoint: 'https://neotitan.ddns.net:9214/v1/chat/completions',
+    ragEndpoint: 'https://neotitan.ddns.net:9215/v1/chat/completions',
     headers: {
         "Content-Type": "application/json"
     }
 };
 
 const healthChecks = {
-    basicEndpoint: 'http://neotitan.ddns.net:9214/v1/health',
-    ragEndpoint: 'http://neotitan.ddns.net:9215/health'
+    basicEndpoint: 'https://neotitan.ddns.net:9214/v1/health',
+    ragEndpoint: 'https://neotitan.ddns.net:9215/health'
 };
 
 // Initialize conversation histories
