@@ -22,6 +22,17 @@ After discussing RAG implementations during my initial interview, I created this
 - **Embedding Model**: Nomic Embed Text v1.5
 - **Base LLM**: Phi-4
 
+## Security Implementation
+To ensure enterprise-grade security and compliance with modern web standards, the project implements:
+
+- End-to-end SSL encryption using Let's Encrypt certificates
+- Secure reverse proxy configuration with NGINX
+- HTTPS-compliant API endpoints
+- GitHub Pages security integration
+- Automated certificate management
+
+This security layer ensures safe transmission of queries and responses while maintaining high performance and reliability. The implementation follows industry best practices for protecting data in transit, crucial for enterprise applications handling proprietary information.
+
 ### Key Features
 - Side-by-side comparison of base vs RAG-enhanced responses
 - Real-time response streaming using Server-Sent Events
@@ -43,12 +54,20 @@ After discussing RAG implementations during my initial interview, I created this
   - FastAPI
   - Uvicorn
   - Pinecone Python SDK
+  - NGINX (Reverse Proxy)
+  - Let's Encrypt SSL Certificates
   
 - **AI/ML**:
   - Phi-4 Language Model
   - Nomic Embed Text v1.5
   - Custom RAG implementation
   - Pinecone vector database
+
+- **Infrastructure**:
+  - GitHub Pages for static hosting
+  - Dynamic DNS configuration
+  - Windows Server deployment
+  - Port forwarding and network security
 
 ## Project Structure
 ```bash
