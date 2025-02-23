@@ -1,5 +1,7 @@
 # Brado RAG Demo
 
+View the demo at https://twolven.github.io/brado-rag-demo/
+
 ## Overview
 This project demonstrates my expertise in Retrieval-Augmented Generation (RAG) by creating a real-time comparison between a base language model (Phi-4) and a RAG-enhanced version. The demo specifically focuses on company-specific knowledge about Brado, showcasing how RAG can significantly improve response accuracy and relevance in a business context.
 
