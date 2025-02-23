@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Brado RAG Demo</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/showdown/2.1.0/showdown.min.js"></script>
+    <style>
+        :root {
+            --header-height: auto;
+            --input-height: 70px;
+        }
+    
+        html, body {
+            height: 100%;
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+        }
+    
+        .app-container {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+        }
+    
+        .models-container {
+            flex: 1;
+            min-height: 0;
+            overflow: auto;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1rem;
+            padding: 1rem;
+            height: calc(100vh - var(--header-height) - var(--input-height));
+        }
+    
+        .model-window {
+            background: white;
+            border-radius: 0.5rem;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            overflow: hidden;
+        }
+    
+        .chat-window {
+            flex: 1;
+            overflow-y: auto;
+            padding: 1rem;
+            scroll-behavior: smooth;
+        }
+    
+        .message {
+            display: flex;
+            align-items: flex-start;
+            margin: 10px;
+            padding: 10px;
+            border-radius: 10px;
+            max-width: 80%;
+            word-wrap: break-word;
+        }
+    
+        .user-message {
+            background-color: #1d4ed8;
+            color: white;
+            margin-left: auto;
+            flex-direction: row-reverse;
+        }
+    
+        .bot-message {
+            background-color: #f3f4f6;
+            color: black;
+            margin-right: auto;
+        }
+    
+        .message-icon {
+            flex-shrink: 0;
+            margin: 0 8px;
+        }
+    
+        .message-content {
+            flex-grow: 1;
+        }
+    
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f3f4f6;
+            border-radius: 50%;
+            border-top-color: #1d4ed8;
+            animation: spin 1s linear infinite;
+        }
+    
+        @keyframes spin {
+            to {transform: rotate(360deg);}
+        }
+    
+        .chat-window::-webkit-scrollbar {
+            width: 8px;
+        }
+    
+        .chat-window::-webkit-scrollbar-track {
+            background: #f1f5f9;
+        }
+    
+        .chat-window::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
+        }
+    
+        .typing-indicator {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-style: italic;
+            background: linear-gradient(
+                90deg,
+                #1e40af 0%,
+                #3b82f6 25%,
+                #60a5fa 50%,
+                #3b82f6 75%,
+                #1e40af 100%
+            );
+            background-size: 200% 100%;
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            animation: shimmer 2s infinite;
+            padding: 4px 0;
+            font-weight: bold;
+            letter-spacing: 0.5px;
+            text-shadow: 0 0 10px rgba(59, 130, 246, 0.1);
+            font-size: 0.9rem;
+        }
+    
+        .typing-dots {
+            display: flex;
+            gap: 4px;
+        }
+    
+        .typing-dots span {
+            width: 4px;
+            height: 4px;
+            background: currentColor;
+            border-radius: 50%;
+            animation: blink 1.4s infinite both;
+        }
+    
+        .typing-dots span:nth-child(2) { animation-delay: 0.2s; }
+        .typing-dots span:nth-child(3) { animation-delay: 0.4s; }
+    
+        @keyframes blink {
+            0% { opacity: 0.1; }
+            20% { opacity: 1; }
+            100% { opacity: 0.1; }
+        }
+        
+        @media (max-width: 768px) {
+            .models-container {
+                display: flex;
+                flex-direction: column;
+                height: calc(100vh - var(--header-height) - var(--input-height));
+            }
+    
+            .model-window {
+                flex: 1;
+                min-height: 0;
+                max-height: calc((100vh - var(--header-height) - var(--input-height)) / 2);
+                overflow: hidden;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container bg-gray-100">
+        <!-- Header -->
+        <header class="bg-white shadow-sm p-4">
+            <h1 class="text-3xl font-bold text-center mb-2">Brado RAG Demo</h1>
+            <div class="max-w-4xl mx-auto text-center">
+                <p class="text-sm text-blue-600 mb-1">Compare base Phi-4 model (left) with RAG-enabled version (right) enhanced with Brado Cuneo Nollau, LLC-specific knowledge for accurate company-related responses. Since Phi 4 does not have ground-truth knowledge of this company, it may hallucinate, and the RAG version should return context specific answers.</p>
+                <p class="text-xs text-gray-600">All information about Brado was gathered using an AI-Agent tasked with finding all public information about Brado based in St Louis, and its employees, customers, and use cases. Press F12 on desktop or open your console to view more technical information.</p>
+            </div>
+        </header>
+
+        <!-- Suggested Questions -->
+        <div class="suggested-questions px-4 py-2 bg-white border-b">
+            <p class="text-sm text-gray-600 mb-2">Try asking:</p>
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-2" id="suggestions-container">
+                <!-- Questions will be dynamically inserted here -->
+            </div>
+        </div>
+
+        <!-- Models Container -->
+        <div class="models-container md:grid md:grid-cols-2 gap-4 p-4">
+            <!-- Basic Model Chat -->
+            <div class="model-window bg-white rounded-lg shadow-lg mb-4 md:mb-0 flex flex-col">
+                <h2 class="text-lg font-semibold p-3 border-b">Basic Phi-4</h2>
+                <div id="basic-chat" class="chat-window p-4 flex-1"></div>
+            </div>
+
+            <!-- RAG Model Chat -->
+            <div class="model-window bg-white rounded-lg shadow-lg flex flex-col">
+                <h2 class="text-lg font-semibold p-3 border-b">RAG-Enabled Phi-4 (Pinecone.io Backend)</h2>
+                <div id="rag-chat" class="chat-window p-4 flex-1"></div>
+            </div>
+        </div>
+
+        <!-- Input Form -->
+        <div class="bg-white border-t p-4" style="height: var(--input-height)">
+            <form id="chat-form" class="flex gap-4 max-w-4xl mx-auto">
+                <input 
+                    type="text" 
+                    id="user-input" 
+                    class="flex-1 px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="Type your message here..."
+                >
+                <button 
+                    type="submit"
+                    class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                    Send
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // Array of all possible questions
+        const allQuestions = [
+            "What is Brado's Conversational-AI Engagement Platform?",
+            "Tell me about Brado's leadership team",
+            "What are Brado's main office locations?",
+            "How does Brado approach healthcare solutions?",
+            "What is Brado's history and evolution?",
+            "What are Brado's core services?",
+            "Who is Andy Parham and what's his role at Brado?",
+            "How does Brado handle information security?",
+            "What is Brado's approach to customer experience?",
+            "How does Brado support higher education institutions?",
+            "What was Brado's partnership with Bon Secours Mercy Health?",
+            "What are Brado's research methodologies?",
+        ];
+
+        // Function to get random items from array
+        function getRandomItems(arr, count) {
+            const shuffled = [...arr].sort(() => 0.5 - Math.random());
+            return shuffled.slice(0, count);
+        }
+
+        // Function to update suggestions
+        function updateSuggestions() {
+            const container = document.getElementById('suggestions-container');
+            container.innerHTML = ''; // Clear existing suggestions
+            
+            // Get random questions based on screen width
+            const isMobile = window.innerWidth < 768;
+            const questions = getRandomItems(allQuestions, isMobile ? 2 : 4);
+            
+            questions.forEach(question => {
+                const button = document.createElement('button');
+                button.className = 'question-btn bg-blue-50 hover:bg-blue-100 text-blue-700 text-sm py-2 px-3 rounded-lg text-left transition duration-150';
+                button.textContent = question;
+                button.addEventListener('click', () => {
+                    const userInput = document.getElementById('user-input');
+                    userInput.value = question;
+                    document.getElementById('chat-form').dispatchEvent(new Event('submit'));
+                });
+                container.appendChild(button);
+            });
+        }
+
+        // Update suggestions initially and on window resize
+        updateSuggestions();
+        window.addEventListener('resize', updateSuggestions);
+    </script>
+
+    <script src="app.js"></script>
+</body>
+</html>
