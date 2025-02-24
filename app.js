@@ -143,7 +143,6 @@ async function getRagResponse(message) {
 
         logInfo('🔍 Initiating RAG-enhanced response...', 'info');
         
-        // Create message element with loading indicator
         let botMessage = createMessageElement('', false);
         const loadingIndicator = document.createElement('div');
         loadingIndicator.className = 'typing-indicator';
@@ -179,27 +178,14 @@ async function getRagResponse(message) {
         const reader = response.body.getReader();
         const decoder = new TextDecoder();
         let text = '';
-        let displayBuffer = '';
-        let lastDisplayTime = 0;
-        const DISPLAY_INTERVAL = 8;
 
         const contentSpan = botMessage.querySelector('.message-content');
-
-        const updateDisplay = () => {
-            const now = performance.now();
-            if (now - lastDisplayTime >= DISPLAY_INTERVAL && displayBuffer !== text) {
-                contentSpan.innerHTML = converter.makeHtml(text);
-                scrollToBottom(ragChat);
-                displayBuffer = text;
-                lastDisplayTime = now;
-            }
-        };
 
         while (true) {
             const {done, value} = await reader.read();
             if (done) break;
 
-            const chunk = decoder.decode(value);
+            const chunk = decoder.decode(value, {stream: true});
             const lines = chunk.split('\n').filter(line => line.trim());
 
             for (const line of lines) {
@@ -208,7 +194,6 @@ async function getRagResponse(message) {
                     if (!data) continue;
 
                     if (data === '[DONE]') {
-                        // Add assistant's complete response to history
                         ragHistory.push({ role: "assistant", content: text });
                         contentSpan.innerHTML = converter.makeHtml(text);
                         scrollToBottom(ragChat);
@@ -221,12 +206,11 @@ async function getRagResponse(message) {
                         const content = parsed.choices?.[0]?.delta?.content || '';
                         if (content) {
                             text += content;
-                            requestAnimationFrame(updateDisplay);
+                            contentSpan.innerHTML = converter.makeHtml(text);
+                            scrollToBottom(ragChat);
                         }
                     } catch (e) {
-                        if (data && !data.includes('data: data:')) {
-                            console.debug('Skipping incomplete chunk');
-                        }
+                        console.error('Error parsing chunk:', e);
                     }
                 }
             }
