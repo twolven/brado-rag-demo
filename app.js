@@ -92,6 +92,7 @@ async function getBasicResponse(message) {
         const reader = response.body.getReader();
         const decoder = new TextDecoder();
         let text = '';
+        let jsonBuffer = '';
 
         let botMessage = createMessageElement('', false);
         basicChat.appendChild(botMessage);
@@ -114,8 +115,13 @@ async function getBasicResponse(message) {
                         break;
                     }
 
+                    // Add to JSON buffer and try to parse
+                    jsonBuffer += data;
                     try {
-                        const parsed = JSON.parse(data);
+                        const parsed = JSON.parse(jsonBuffer);
+                        // If parse succeeds, reset buffer
+                        jsonBuffer = '';
+                        
                         const content = parsed.choices[0]?.delta?.content || '';
                         if (content) {
                             text += content;
@@ -123,7 +129,8 @@ async function getBasicResponse(message) {
                             scrollToBottom(basicChat);
                         }
                     } catch (e) {
-                        console.error('Error parsing chunk:', e);
+                        // If JSON is incomplete, continue collecting in buffer
+                        // Just silently continue if parse fails
                     }
                 }
             }
@@ -178,8 +185,11 @@ async function getRagResponse(message) {
         const reader = response.body.getReader();
         const decoder = new TextDecoder();
         let text = '';
+        let jsonBuffer = '';
 
         const contentSpan = botMessage.querySelector('.message-content');
+        // Clear loading indicator
+        contentSpan.innerHTML = '';
 
         while (true) {
             const {done, value} = await reader.read();
@@ -201,8 +211,13 @@ async function getRagResponse(message) {
                         break;
                     }
 
+                    // Add to JSON buffer and try to parse
+                    jsonBuffer += data;
                     try {
-                        const parsed = JSON.parse(data);
+                        const parsed = JSON.parse(jsonBuffer);
+                        // If parse succeeds, reset buffer
+                        jsonBuffer = '';
+                        
                         const content = parsed.choices?.[0]?.delta?.content || '';
                         if (content) {
                             text += content;
@@ -210,7 +225,8 @@ async function getRagResponse(message) {
                             scrollToBottom(ragChat);
                         }
                     } catch (e) {
-                        console.error('Error parsing chunk:', e);
+                        // If JSON is incomplete, continue collecting in buffer
+                        // Just silently continue if parse fails
                     }
                 }
             }
