@@ -92,7 +92,6 @@ async function getBasicResponse(message) {
         const reader = response.body.getReader();
         const decoder = new TextDecoder();
         let text = '';
-        let jsonBuffer = '';
 
         let botMessage = createMessageElement('', false);
         basicChat.appendChild(botMessage);
@@ -115,13 +114,8 @@ async function getBasicResponse(message) {
                         break;
                     }
 
-                    // Add to JSON buffer and try to parse
-                    jsonBuffer += data;
                     try {
-                        const parsed = JSON.parse(jsonBuffer);
-                        // If parse succeeds, reset buffer
-                        jsonBuffer = '';
-                        
+                        const parsed = JSON.parse(data);
                         const content = parsed.choices[0]?.delta?.content || '';
                         if (content) {
                             text += content;
@@ -129,8 +123,10 @@ async function getBasicResponse(message) {
                             scrollToBottom(basicChat);
                         }
                     } catch (e) {
-                        // If JSON is incomplete, continue collecting in buffer
-                        // Just silently continue if parse fails
+                        // Silently ignore parse errors
+                        if (data && !data.includes('data: data:')) {
+                            console.debug('Skipping incomplete chunk');
+                        }
                     }
                 }
             }
@@ -150,6 +146,7 @@ async function getRagResponse(message) {
 
         logInfo('🔍 Initiating RAG-enhanced response...', 'info');
         
+        // Create message element with loading indicator
         let botMessage = createMessageElement('', false);
         const loadingIndicator = document.createElement('div');
         loadingIndicator.className = 'typing-indicator';
@@ -185,17 +182,34 @@ async function getRagResponse(message) {
         const reader = response.body.getReader();
         const decoder = new TextDecoder();
         let text = '';
-        let jsonBuffer = '';
+        let displayBuffer = '';
+        let lastDisplayTime = 0;
+        const DISPLAY_INTERVAL = 8;
 
         const contentSpan = botMessage.querySelector('.message-content');
-        // Clear loading indicator
-        contentSpan.innerHTML = '';
+        let loadingCleared = false;
+
+        const updateDisplay = () => {
+            const now = performance.now();
+            if (now - lastDisplayTime >= DISPLAY_INTERVAL && displayBuffer !== text) {
+                // Clear loading indicator on first content if not already cleared
+                if (!loadingCleared && text.length > 0) {
+                    contentSpan.innerHTML = '';
+                    loadingCleared = true;
+                }
+                
+                contentSpan.innerHTML = converter.makeHtml(text);
+                scrollToBottom(ragChat);
+                displayBuffer = text;
+                lastDisplayTime = now;
+            }
+        };
 
         while (true) {
             const {done, value} = await reader.read();
             if (done) break;
 
-            const chunk = decoder.decode(value, {stream: true});
+            const chunk = decoder.decode(value);
             const lines = chunk.split('\n').filter(line => line.trim());
 
             for (const line of lines) {
@@ -204,29 +218,33 @@ async function getRagResponse(message) {
                     if (!data) continue;
 
                     if (data === '[DONE]') {
+                        // Add assistant's complete response to history
                         ragHistory.push({ role: "assistant", content: text });
+                        
+                        // Ensure loading indicator is cleared
+                        if (!loadingCleared) {
+                            contentSpan.innerHTML = '';
+                            loadingCleared = true;
+                        }
+                        
                         contentSpan.innerHTML = converter.makeHtml(text);
                         scrollToBottom(ragChat);
                         logInfo('✅ RAG-enhanced response complete', 'success');
                         break;
                     }
 
-                    // Add to JSON buffer and try to parse
-                    jsonBuffer += data;
                     try {
-                        const parsed = JSON.parse(jsonBuffer);
-                        // If parse succeeds, reset buffer
-                        jsonBuffer = '';
-                        
+                        const parsed = JSON.parse(data);
                         const content = parsed.choices?.[0]?.delta?.content || '';
                         if (content) {
                             text += content;
-                            contentSpan.innerHTML = converter.makeHtml(text);
-                            scrollToBottom(ragChat);
+                            requestAnimationFrame(updateDisplay);
                         }
                     } catch (e) {
-                        // If JSON is incomplete, continue collecting in buffer
-                        // Just silently continue if parse fails
+                        // Silently ignore parse errors
+                        if (data && !data.includes('data: data:')) {
+                            console.debug('Skipping incomplete chunk');
+                        }
                     }
                 }
             }
